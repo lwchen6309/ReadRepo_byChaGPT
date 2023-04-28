@@ -20,9 +20,9 @@ Simply, paste all the code of `scripts/amg.py` into ChatGPT with :
 
 ```
 Please explain the structure of this code, and show me where the segment-anything is implemented:
-{paste the code of amg.py here}
+```paste the code of amg.py here```
 ```
-Recieving the results from GPT:
+Recieving the results from GPT would return something like this (there is no guarantee of this answer dues to its randomness of answer, try few more time if it return something else):
 ```
 ...
 The script imports the following modules:
@@ -103,5 +103,53 @@ The class has three main methods:
 - `_process_batch`: Runs the model on a batch of points and returns the predicted masks and associated data.
 
 The class also has a static method called `postprocess_small_regions` that removes small disconnected regions and holes in masks and reruns box NMS to remove any new duplicates. This method requires OpenCV as a dependency.
-
 ```
+
+We are now good to check its implementation in `_generate_masks`. Again, paste the code as follows:
+```
+Please explain this code, and show me where segment anything is implemented and how to do it.
+```paste code here```
+```
+Resultsing the following answer:
+```
+The code provided is a Python class `SamAutomaticMaskGenerator` that generates masks for an entire image using the Spatial Attention Module (SAM) model. The input to the generator is an RGB image, and the output is a list of masks in a specified format. 
+
+The SAM model is a deep learning model that generates attention maps for images. It uses a backbone such as a convolutional neural network (CNN) or a Vision Transformer (ViT) and a decoder to output a multi-resolution mask of the image. The decoder uses spatial attention to fuse features across multiple resolutions to generate the final mask. 
+
+The `SamAutomaticMaskGenerator` class has the following main methods:
+
+1. `__init__()`: Initializes the generator with a SAM model and various parameters that control how masks are generated and processed.
+2. `generate()`: Generates masks for an input image.
+3. `_generate_masks()`: Generates masks for an input image crop.
+4. `_process_crop()`: Processes a crop of an input image.
+5. `_process_batch()`: Processes a batch of points within a crop of an input image.
+6. `postprocess_small_regions()`: Removes small disconnected regions and holes in masks, then reruns box NMS to remove any new duplicates.
+
+The `SamAutomaticMaskGenerator` class has the following parameters:
+
+1. `model`: A SAM model.
+2. `points_per_side`: The number of points to be sampled along one side of the image.
+3. `points_per_batch`: The number of points run simultaneously by the model.
+4. `pred_iou_thresh`: A filtering threshold in [0,1], using the model's predicted mask quality.
+5. `stability_score_thresh`: A filtering threshold in [0,1], using the stability of the mask under changes to the cutoff used to binarize the model's mask predictions.
+6. `stability_score_offset`: The amount to shift the cutoff when calculating the stability score.
+7. `box_nms_thresh`: The box IoU cutoff used by non-maximal suppression to filter duplicate masks.
+8. `crop_n_layers`: If >0, mask prediction will be run again on crops of the image.
+9. `crop_nms_thresh`: The box IoU cutoff used by non-maximal suppression to filter duplicate masks between different crops.
+10. `crop_overlap_ratio`: Sets the degree to which crops overlap.
+11. `crop_n_points_downscale_factor`: The number of points-per-side sampled in layer n is scaled down by `crop_n_points_downscale_factor**n`.
+12. `point_grids`: A list over explicit grids of points used for sampling, normalized to [0,1].
+13. `min_mask_region_area`: If >0, postprocessing will be applied to remove disconnected regions and holes in masks with area smaller than `min_mask_region_area`.
+14. `output_mode`: The form masks are returned in. Can be 'binary_mask', 'uncompressed_rle', or 'coco_rle'.
+
+The `SamAutomaticMaskGenerator` class generates masks by sampling points over an image, processing each sample point batch in parallel, thresholding masks to binary, removing small disconnected regions and holes, filtering masks by predicted IoU and stability, and encoding the final masks. The class uses `batched_nms()` function from torchvision.ops.boxes to perform non-maximum suppression. 
+
+Regarding the implementation of segmentation, the generator generates masks through the following steps:
+
+1. An input image is divided into crops to reduce the computation complexity.
+2. For each crop, a set of point samples are generated.
+3. For each set of points, the model predicts a set of binary masks with different resolutions.
+...
+```
+
+You can then further ask GPT about the detail of this core function, and compare the algo in paper if needed.
